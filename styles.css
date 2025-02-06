@@ -1,0 +1,139 @@
+:root {
+    --teal: #40CCC3;
+    --orange: #FF9B2F;
+    --cream: #F5F1E3;
+    --dark: #1D3557;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--cream);
+}
+
+#map {
+    height: 60vh;
+    width: 100%;
+    border-bottom: 3px solid var(--orange);
+}
+
+#timeline {
+    height: 40vh;
+    position: relative;
+    background: var(--cream);
+}
+
+.timeline-container {
+    overflow-x: scroll;
+    width: 100%;
+    height: calc(100% - 40px);
+}
+
+.timeline-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+}
+
+.timeline-controls button {
+    padding: 8px 20px;
+    margin: 0 5px;
+    cursor: pointer;
+    background-color: var(--teal);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.timeline-controls button:hover {
+    background-color: var(--orange);
+    transform: scale(1.05);
+}
+
+#gantt {
+    height: 100%;
+    min-width: 100%;
+}
+
+.timeline-tooltip {
+    position: absolute;
+    padding: 10px;
+    background: white;
+    border: 2px solid var(--teal);
+    border-radius: 8px;
+    pointer-events: none;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.timeline-tooltip strong {
+    color: var(--dark);
+}
+
+.festival-bar {
+    fill: var(--teal);
+    opacity: 0.8;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.festival-bar:hover {
+    fill: var(--orange);
+    opacity: 1;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    background: var(--cream);
+}
+
+.leaflet-popup-content {
+    margin: 15px;
+}
+
+.festival-popup {
+    text-align: center;
+}
+
+.festival-popup img {
+    width: 200px;
+    height: 150px;
+    object-fit: cover;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border: 2px solid var(--teal);
+}
+
+.festival-popup h3 {
+    color: var(--dark);
+    margin: 10px 0;
+}
+
+.leaflet-popup-tip {
+    background: var(--cream);
+}
+
+/* Custom map marker colors */
+.leaflet-marker-icon {
+    filter: hue-rotate(160deg) saturate(1.5);
+}
+
+.past-festival {
+    fill: #999;
+    opacity: 0.5;
+}
+
+.past-festival:hover {
+    fill: #666;
+    opacity: 0.8;
+}
+
+.current-date-line {
+    pointer-events: none;
+} 
