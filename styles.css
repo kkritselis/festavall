@@ -1,7 +1,7 @@
 :root {
-    --teal: #40CCC3;
-    --orange: #FF9B2F;
-    --cream: #F5F1E3;
+    --teal: #00c8b0;
+    --orange: #ff641e;
+    --cream: #f3e6ba;
     --dark: #1D3557;
 }
 
@@ -15,9 +15,11 @@ body {
 }
 
 #map {
-    height: 60vh;
-    width: 100%;
-    border-bottom: 3px solid var(--orange);
+    height: 50vh;
+    width: 96%;
+    border: 3px solid var(--orange);
+    border-radius: 25px;
+    margin: 15px;
 }
 
 #timeline {
@@ -77,14 +79,12 @@ body {
 }
 
 .festival-bar {
-    fill: var(--teal);
     opacity: 0.8;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .festival-bar:hover {
-    fill: var(--orange);
     opacity: 1;
 }
 
@@ -121,7 +121,7 @@ body {
 
 /* Custom map marker colors */
 .leaflet-marker-icon {
-    filter: hue-rotate(160deg) saturate(1.5);
+    filter: none;
 }
 
 .past-festival {
@@ -136,4 +136,45 @@ body {
 
 .current-date-line {
     pointer-events: none;
+}
+
+.map-logo {
+    pointer-events: none;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.2));
+}
+
+@media screen and (max-width: 600px) {
+    .map-logo {
+        width: 75px !important;
+    }
+    
+    /* Reposition logo container for small screens */
+    .leaflet-control-container .leaflet-top.leaflet-right {
+        top: unset !important;
+        bottom: 20px;
+    }
+
+    #map {
+        box-sizing: border-box;
+        height: 60vh;
+        width: 100%;
+        border: 3px inset var(--orange);
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        border-bottom-left-radius: 25px;
+        border-bottom-right-radius: 25px;
+        margin: 0;
+    }
 } 
+
+
+
+.custom-marker div {
+    width: 25px;
+    height: 41px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    mask: url(https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png) no-repeat center;
+    -webkit-mask: url(https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png) no-repeat center;
+}

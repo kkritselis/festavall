@@ -40,21 +40,76 @@ async function loadData() {
     }).filter(festival => festival !== null);
 }
 
+// Add this function to assign colors based on chronological order
+function getFestivalColor(index, totalFestivals) {
+    const hue = (360 / totalFestivals) * index;
+    return `hsl(${hue}, 85%, 50%)`; // Using 85% saturation for slightly softer colors
+}
+
 function initMap(festivals) {
-    map = L.map('map').setView([0, 0], 2);
+    // Sort festivals by start date first
+    const sortedFestivals = [...festivals].sort((a, b) => a.start - b.start);
     
-    // Custom map style with matching colors
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    // Create a map of festival names to their colors
+    const festivalColors = {};
+    sortedFestivals.forEach((festival, index) => {
+        festivalColors[festival.name] = getFestivalColor(index, sortedFestivals.length);
+    });
+
+    map = L.map('map', {
+        scrollWheelZoom: true,
+        zoomControl: true
+    }).setView([0, 0], 2);
+    
+    // Custom map style with teal water
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '©OpenStreetMap, ©CartoDB',
         subdomains: 'abcd',
-        maxZoom: 19
+        maxZoom: 19,
+        className: 'map-tiles'
     }).addTo(map);
+
+    // Add custom CSS filter to change water color
+    const style = document.createElement('style');
+    style.textContent = `
+        .map-tiles {
+            filter: hue-rotate(20deg) saturate(1.42);
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Add logo as a custom control
+    L.Control.Logo = L.Control.extend({
+        onAdd: function(map) {
+            const img = L.DomUtil.create('img', 'map-logo');
+            img.src = 'img/logo.png';
+            img.style.width = '150px';
+            return img;
+        }
+    });
+    
+    new L.Control.Logo({ position: 'topright' }).addTo(map);
     
     festivals.forEach(festival => {
-        const marker = L.marker([festival.lat, festival.lon])
-            .bindPopup(createPopupContent(festival), {
-                className: 'custom-popup'
-            });
+        const festivalColor = festivalColors[festival.name];
+        
+        // Create popup first
+        const popup = L.popup({
+            className: 'custom-popup',
+            closeButton: true,
+            autoClose: true
+        }).setContent(createPopupContent(festival));
+
+        // Create marker with color from our spectrum
+        const marker = L.marker([festival.lat, festival.lon], {
+            icon: L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background-color: ${festivalColor}"></div>`,
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34]
+            })
+        }).bindPopup(popup);
         
         markers[festival.name] = marker;
         marker.addTo(map);
@@ -75,7 +130,7 @@ function createPopupContent(festival) {
 function initTimeline(festivals) {
     const container = d3.select('#gantt');
     const margin = {top: 20, right: 20, bottom: 30, left: 50};
-    const minBarWidth = 30; // Minimum width for one-day festivals
+    const minBarWidth = 30;
     
     // Sort festivals by date
     const currentDate = new Date();
@@ -83,11 +138,9 @@ function initTimeline(festivals) {
         const aEnded = a.end < currentDate;
         const bEnded = b.end < currentDate;
         
-        // If both have ended or both haven't ended, sort by start date
         if (aEnded === bEnded) {
             return a.start - b.start;
         }
-        // Put ended festivals at the bottom
         return aEnded ? 1 : -1;
     });
     
@@ -116,40 +169,65 @@ function initTimeline(festivals) {
         .style('opacity', 0);
         
     // Add timeline bars
-    svg.selectAll('rect')
+    const bars = svg.selectAll('rect')
         .data(sortedFestivals)
         .enter()
         .append('rect')
         .attr('class', d => `festival-bar ${d.end < currentDate ? 'past-festival' : ''}`)
+        .style('fill', (d, i) => d.end < currentDate ? '#999' : getFestivalColor(i, sortedFestivals.length))
         .attr('x', d => xScale(d.start))
         .attr('y', d => yScale(d.name))
         .attr('width', d => {
             const width = xScale(d.end) - xScale(d.start);
             return Math.max(width, minBarWidth);
         })
-        .attr('height', yScale.bandwidth())
-        .on('mouseover', (event, d) => {
-            tooltip.transition()
-                .duration(200)
-                .style('opacity', .9);
-            tooltip.html(`
-                <strong>${d.name}</strong><br/>
-                ${d.start.toLocaleDateString()} - ${d.end.toLocaleDateString()}
-                ${d.start.toDateString() === d.end.toDateString() ? '<br/>(One-day event)' : ''}
-            `)
-                .style('left', (event.pageX + 10) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
+        .attr('height', yScale.bandwidth());
+
+    // Add text labels
+    svg.selectAll('text.festival-label')
+        .data(sortedFestivals)
+        .enter()
+        .append('text')
+        .attr('class', 'festival-label')
+        .attr('x', d => {
+            const width = Math.max(xScale(d.end) - xScale(d.start), minBarWidth);
+            return xScale(d.start) + width + 5; // 5px padding after bar
         })
-        .on('mouseout', () => {
-            tooltip.transition()
-                .duration(500)
-                .style('opacity', 0);
-        })
-        .on('click', (event, d) => {
-            if (markers[d.name]) {
-                markers[d.name].openPopup();
-            }
-        });
+        .attr('y', d => yScale(d.name) + (yScale.bandwidth() / 2))
+        .attr('dy', '0.35em') // Vertical centering
+        .text(d => d.name)
+        .style('fill', d => d.end < currentDate ? '#999' : '#333')
+        .style('font-size', '12px');
+
+    // Add event handlers to both bars and labels
+    const addEventHandlers = (selection) => {
+        selection
+            .on('mouseover', (event, d) => {
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', .9);
+                tooltip.html(`
+                    <strong>${d.name}</strong><br/>
+                    ${d.start.toLocaleDateString()} - ${d.end.toLocaleDateString()}
+                    ${d.start.toDateString() === d.end.toDateString() ? '<br/>(One-day event)' : ''}
+                `)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
+            })
+            .on('mouseout', () => {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0);
+            })
+            .on('click', (event, d) => {
+                if (markers[d.name]) {
+                    markers[d.name].openPopup();
+                }
+            });
+    };
+
+    addEventHandlers(bars);
+    addEventHandlers(svg.selectAll('text.festival-label'));
         
     // Add only the x-axis (timeline)
     const xAxis = d3.axisBottom(xScale);
