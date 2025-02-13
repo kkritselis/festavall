@@ -15,7 +15,7 @@ body {
 }
 
 #map {
-    height: 50vh;
+    height: 60vh;
     width: 96%;
     border: 3px solid var(--orange);
     border-radius: 25px;
@@ -31,7 +31,7 @@ body {
 .timeline-container {
     overflow-x: scroll;
     width: 100%;
-    height: calc(100% - 40px);
+    height: calc(100%);
 }
 
 .timeline-controls {

@@ -232,7 +232,7 @@ function initTimeline(festivals) {
     // Add only the x-axis (timeline)
     const xAxis = d3.axisBottom(xScale);
     svg.append('g')
-        .attr('transform', `translate(0, ${400})`)
+        .attr('transform', `translate(0, ${430})`)
         .call(xAxis);
 
     // Add current date line
