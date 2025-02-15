@@ -103,7 +103,7 @@ body {
 
 .festival-popup img {
     width: 200px;
-    height: 150px;
+    height: 100%;
     object-fit: cover;
     margin-bottom: 10px;
     border-radius: 4px;

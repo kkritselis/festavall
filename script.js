@@ -46,6 +46,14 @@ function getFestivalColor(index, totalFestivals) {
     return `hsl(${hue}, 85%, 50%)`; // Using 85% saturation for slightly softer colors
 }
 
+function getUpcomingScale(startDate, currentDate) {
+    const daysUntilStart = (startDate - currentDate) / (1000 * 60 * 60 * 24);
+    if (daysUntilStart < 0) return 0.6; // Past events
+    if (daysUntilStart < 30) return 1.0; // Within next 30 days
+    if (daysUntilStart < 90) return 0.8; // Within next 90 days
+    return 0.6; // Further in the future
+}
+
 function initMap(festivals) {
     // Sort festivals by start date first
     const sortedFestivals = [...festivals].sort((a, b) => a.start - b.start);
@@ -92,6 +100,8 @@ function initMap(festivals) {
     
     festivals.forEach(festival => {
         const festivalColor = festivalColors[festival.name];
+        const scale = getUpcomingScale(festival.start, new Date());
+        const baseSize = [25, 41]; // Base marker size
         
         // Create popup first
         const popup = L.popup({
@@ -100,14 +110,14 @@ function initMap(festivals) {
             autoClose: true
         }).setContent(createPopupContent(festival));
 
-        // Create marker with color from our spectrum
+        // Create marker with scaled size
         const marker = L.marker([festival.lat, festival.lon], {
             icon: L.divIcon({
                 className: 'custom-marker',
-                html: `<div style="background-color: ${festivalColor}"></div>`,
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34]
+                html: `<div style="background-color: ${festivalColor}; transform: scale(${scale})"></div>`,
+                iconSize: [baseSize[0] * scale, baseSize[1] * scale],
+                iconAnchor: [baseSize[0] * scale / 2, baseSize[1] * scale],
+                popupAnchor: [1, -baseSize[1] * scale]
             })
         }).bindPopup(popup);
         
@@ -168,6 +178,15 @@ function initTimeline(festivals) {
         .attr('class', 'timeline-tooltip')
         .style('opacity', 0);
         
+    // Calculate opacity based on how soon the festival is
+    function getUpcomingOpacity(startDate, currentDate) {
+        const daysUntilStart = (startDate - currentDate) / (1000 * 60 * 60 * 24);
+        if (daysUntilStart < 0) return 0.5; // Past events
+        if (daysUntilStart < 30) return 1.0; // Within next 30 days
+        if (daysUntilStart < 90) return 0.8; // Within next 90 days
+        return 0.6; // Further in the future
+    }
+
     // Add timeline bars
     const bars = svg.selectAll('rect')
         .data(sortedFestivals)
@@ -175,6 +194,7 @@ function initTimeline(festivals) {
         .append('rect')
         .attr('class', d => `festival-bar ${d.end < currentDate ? 'past-festival' : ''}`)
         .style('fill', (d, i) => d.end < currentDate ? '#999' : getFestivalColor(i, sortedFestivals.length))
+        .style('opacity', d => getUpcomingOpacity(d.start, currentDate))
         .attr('x', d => xScale(d.start))
         .attr('y', d => yScale(d.name))
         .attr('width', d => {
@@ -203,6 +223,10 @@ function initTimeline(festivals) {
     const addEventHandlers = (selection) => {
         selection
             .on('mouseover', (event, d) => {
+                // Highlight the bar on hover
+                if (d.end >= currentDate) {
+                    d3.select(event.currentTarget).style('opacity', 1);
+                }
                 tooltip.transition()
                     .duration(200)
                     .style('opacity', .9);
@@ -214,7 +238,12 @@ function initTimeline(festivals) {
                     .style('left', (event.pageX + 10) + 'px')
                     .style('top', (event.pageY - 28) + 'px');
             })
-            .on('mouseout', () => {
+            .on('mouseout', (event, d) => {
+                // Restore original opacity
+                if (d.end >= currentDate) {
+                    d3.select(event.currentTarget)
+                        .style('opacity', getUpcomingOpacity(d.start, currentDate));
+                }
                 tooltip.transition()
                     .duration(500)
                     .style('opacity', 0);
@@ -247,25 +276,11 @@ function initTimeline(festivals) {
         .style('stroke-dasharray', '4,4');
 }
 
-// Initialize controls
-function initControls() {
-    const container = document.querySelector('.timeline-container');
-    
-    document.getElementById('scrollLeft').addEventListener('click', () => {
-        container.scrollLeft -= 200;
-    });
-    
-    document.getElementById('scrollRight').addEventListener('click', () => {
-        container.scrollLeft += 200;
-    });
-}
-
 // Main initialization
 async function init() {
     const festivals = await loadData();
     initMap(festivals);
     initTimeline(festivals);
-    initControls();
 }
 
 init(); 
